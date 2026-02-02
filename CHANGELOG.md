@@ -21,6 +21,7 @@ All notable changes to POS Awesome (Trustbit Fork) will be documented in this fi
 - Multiple discount entries per UOM supported
 - Discount automatically cleared when quantity falls outside tier range
 - Sales Invoice form also supports UOM discount via doctype_js hook
+- Bulk upload support via bench console or CSV import (see README for details)
 
 #### Product Bundle Improvements
 - `bypass_sales_item_validation_for_bundles()` function to allow non-sales items in bundles

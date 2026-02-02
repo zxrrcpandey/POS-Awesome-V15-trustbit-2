@@ -69,6 +69,66 @@ Automatically apply discounts based on Unit of Measure (UOM) and quantity tiers.
 2. Add discount entries in Item master > UOM Discounts table
 3. Run `bench --site [site] migrate` after installation
 
+**Bulk Upload UOM Discounts:**
+
+Since `Item UOM Discount` is a child table, use one of these methods:
+
+*Method 1: Via bench console*
+```python
+# bench --site [site] console
+import frappe
+
+discounts = [
+    {"item": "ITEM-001", "uom": "Nos", "discount": 5, "min": 1, "max": 10},
+    {"item": "ITEM-001", "uom": "Nos", "discount": 10, "min": 11, "max": 0},
+]
+
+for d in discounts:
+    frappe.get_doc({
+        "doctype": "Item UOM Discount",
+        "parent": d["item"],
+        "parenttype": "Item",
+        "parentfield": "posa_item_uom_discounts",
+        "uom": d["uom"],
+        "discount_percentage": d["discount"],
+        "min_qty": d["min"],
+        "max_qty": d["max"]
+    }).db_insert()
+
+frappe.db.commit()
+```
+
+*Method 2: From CSV file*
+```python
+import frappe, csv
+
+with open('/path/to/discounts.csv', 'r') as f:
+    reader = csv.DictReader(f)
+    for row in reader:
+        frappe.get_doc({
+            "doctype": "Item UOM Discount",
+            "parent": row["item_code"],
+            "parenttype": "Item",
+            "parentfield": "posa_item_uom_discounts",
+            "uom": row["uom"],
+            "discount_percentage": float(row["discount_percentage"]),
+            "min_qty": float(row.get("min_qty", 0)),
+            "max_qty": float(row.get("max_qty", 0))
+        }).db_insert()
+
+frappe.db.commit()
+```
+
+CSV format:
+```csv
+item_code,uom,discount_percentage,min_qty,max_qty
+ITEM-001,Nos,5,1,10
+ITEM-001,Nos,10,11,0
+ITEM-002,Box,15,1,0
+```
+
+> **Note:** `max_qty = 0` means no upper limit (unlimited)
+
 #### Product Bundle Improvements
 - Non-sales items in Product Bundles can now be sold through POS
 - Automatic validation bypass for bundle component items

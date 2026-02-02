@@ -267,10 +267,8 @@
                 <v-col cols="12" sm="4">
                   <v-text-field density="compact" variant="outlined" color="primary" :label="frappe._('QTY')"
                     bg-color="white" hide-details :model-value="formatFloat(item.qty)" @change="
-                      [
-                        setFormatedQty(item, 'qty', null, false, $event.target.value),
-                        calc_stock_qty(item, item.qty),
-                      ]" :rules="[isNumber]" :disabled="!!item.posa_is_replace"></v-text-field>
+                      handleQtyChange(item, $event.target.value)
+                      " :rules="[isNumber]" :disabled="!!item.posa_is_replace"></v-text-field>
                 </v-col>
                 <v-col cols="12" sm="4">
                   <v-select density="compact" bg-color="white" :label="frappe._('UOM')" v-model="item.uom"
@@ -2870,12 +2868,17 @@ async calc_uom(item, value) {
           }
         });
 
-        if (r.message && flt(r.message) > 0) {
-          const discount_percentage = flt(r.message);
+        const new_discount = flt(r.message) || 0;
+        const current_discount = flt(item.discount_percentage) || 0;
+
+        // Only update if discount has changed
+        if (new_discount !== current_discount) {
+          // Mark if this item has UOM discount applied
+          item.posa_uom_discount_applied = new_discount > 0;
 
           // Use calc_prices to properly apply the discount
           const mockEvent = { target: { id: 'discount_percentage' } };
-          this.calc_prices(item, discount_percentage, mockEvent);
+          this.calc_prices(item, new_discount, mockEvent);
 
           // Trigger Vue reactivity by reassigning the items array
           this.items = [...this.items];
@@ -2883,11 +2886,20 @@ async calc_uom(item, value) {
           this.$forceUpdate();
 
           // Show notification
-          this.eventBus.emit('show_message', {
-            title: __('UOM Discount Applied'),
-            text: __('%s: %s% discount for %s', [item.item_name, discount_percentage, item.uom]),
-            color: 'success'
-          });
+          if (new_discount > 0) {
+            this.eventBus.emit('show_message', {
+              title: __('UOM Discount Applied'),
+              text: __('%s: %s% discount for %s', [item.item_name, new_discount, item.uom]),
+              color: 'success'
+            });
+          } else if (current_discount > 0) {
+            // Discount was removed (qty fell outside tier range)
+            this.eventBus.emit('show_message', {
+              title: __('UOM Discount Removed'),
+              text: __('%s: Quantity outside discount tier', [item.item_name]),
+              color: 'warning'
+            });
+          }
         }
       } catch (error) {
         console.error('Error applying UOM discount:', error);
@@ -4545,6 +4557,19 @@ ApplyBuyGetFreeOffer(offer) {
 
       return parsedValue;
     },
+
+    // Handle qty change and reapply UOM discount
+    async handleQtyChange(item, value) {
+      // Set the formatted qty
+      this.setFormatedQty(item, 'qty', null, false, value);
+
+      // Calculate stock qty
+      this.calc_stock_qty(item, item.qty);
+
+      // Reapply UOM discount based on new quantity
+      await this.apply_item_uom_discount(item);
+    },
+
     async fetch_available_currencies() {
       try {
         console.log("Fetching available currencies...");

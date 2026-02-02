@@ -2332,17 +2332,27 @@ def get_item_uom_discount_for_cart(item_code, uom, qty):
     """
     Get applicable discount percentage for a specific item/UOM/qty combination.
     Used by POS to auto-apply discount when item is added or UOM is changed.
+
+    Logic:
+    - If multiple discounts exist for same UOM, find the best matching qty tier
+    - Order by min_qty descending to get the highest applicable tier first
+    - If min_qty is 0 and max_qty is 0, it applies to all quantities
     """
     if not item_code or not uom:
         return 0
 
     qty = flt(qty) or 1
 
+    # Get all discounts for this item and UOM, ordered by min_qty descending
+    # This ensures we check higher tiers first
     discounts = frappe.get_all(
         'Item UOM Discount',
         filters={'parent': item_code, 'parenttype': 'Item', 'uom': uom},
-        fields=['discount_percentage', 'min_qty', 'max_qty']
+        fields=['discount_percentage', 'min_qty', 'max_qty'],
+        order_by='min_qty desc'
     )
+
+    best_match = None
 
     for d in discounts:
         min_qty = flt(d.min_qty) or 0
@@ -2350,10 +2360,14 @@ def get_item_uom_discount_for_cart(item_code, uom, qty):
 
         # Check if quantity falls within range
         if qty >= min_qty:
+            # If max_qty is 0, there's no upper limit
             if max_qty == 0 or qty <= max_qty:
-                return flt(d.discount_percentage)
+                # Found a match - since we're ordered by min_qty desc,
+                # the first match is the highest applicable tier
+                best_match = flt(d.discount_percentage)
+                break
 
-    return 0
+    return best_match if best_match is not None else 0
 
 
 def bypass_sales_item_validation_for_bundles(doc):

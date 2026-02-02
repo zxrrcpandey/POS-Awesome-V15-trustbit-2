@@ -14,7 +14,7 @@
     Customers can be invoiced in different currencies
     Exchange Rate is fetched automatically based on selected currency
     Invoices made with posawesome display Grand Total in both base and selected currency in erpnext.
-    
+
 3. User-friendly and provides a good user experience and speed of use
 4. The cashier can either use list view or card view during sales transactions. Card view shows the images of the items
 5. Supports enqueue invoice submission after printing the receipt for faster processing
@@ -47,16 +47,77 @@
 32. Payments Reconciliation
 33. A lot more bug fixes from the version 14
 
+---
+
+### Trustbit Customizations (v2.0)
+
+This fork includes additional features and improvements by Trustbit Software:
+
+#### Item UOM Discount Feature
+Automatically apply discounts based on Unit of Measure (UOM) and quantity tiers.
+
+**How it works:**
+- Configure discounts in Item master under "UOM Discounts" table
+- Set UOM, Discount Percentage, Min Qty, and Max Qty for each tier
+- Discount automatically applies when item is added to cart
+- Discount updates when quantity changes (manual entry or +/- buttons)
+- Discount updates when UOM changes
+- Multiple quantity tiers supported (e.g., 5% for 1-10 units, 10% for 11-50 units)
+
+**Setup:**
+1. Enable "Use Item UOM Discount" in POS Profile
+2. Add discount entries in Item master > UOM Discounts table
+3. Run `bench --site [site] migrate` after installation
+
+#### Product Bundle Improvements
+- Non-sales items in Product Bundles can now be sold through POS
+- Automatic validation bypass for bundle component items
+- Works with background job submission
+
+#### Optional Reference Details
+- Reference Number and Reference Name fields are now optional in payment dialog
+- Enable via "Add Reference Details" setting in POS Profile
+
+#### Print Improvements
+- Print opens in background tab to avoid blocking POS
+- Popup blocker detection with user-friendly message
+- Automatic print dialog trigger
+
+#### Customer Form Improvements
+- Default country changed to India for new customers
+- Improved address handling
+
+#### Total Discount Display
+- Shows total item discount amount in payment summary
+- Excludes offer items from discount calculation
+
+#### Bug Fixes
+- Fixed UOM discount not applying when using +/- quantity buttons
+- Fixed UOM discount not updating when quantity falls outside tier range
+- Fixed multiple quantity tier discount selection (highest applicable tier)
+- Product Bundle items validation bypass for submit and background jobs
+
 ### How to Install
 
-#### Self Hosting:
+#### Self Hosting (Trustbit Fork):
 
-1. `bench get-app https://github.com/defendicon/POS-Awesome-V15`
+1. `bench get-app https://github.com/zxrrcpandey/POS-Awesome-V15-trustbit-2`
 2. `bench setup requirements`
 3. `bench build --app posawesome`
 4. `bench restart`
 5. `bench --site [your.site.name] install-app posawesome`
 6. `bench --site [your.site.name] migrate`
+
+#### Post-Installation Setup:
+
+1. Run the install script to create custom fields:
+   ```bash
+   bench --site [your.site.name] execute posawesome.install.after_install
+   ```
+
+2. Configure POS Profile:
+   - Enable "Use Item UOM Discount" for UOM-based discounts
+   - Enable "Add Reference Details" for optional reference fields
 
 ---
 

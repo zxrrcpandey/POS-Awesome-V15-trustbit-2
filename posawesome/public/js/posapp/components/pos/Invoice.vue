@@ -757,7 +757,7 @@ export default {
       this.expanded = this.expanded.filter(id => id !== item.posa_row_id);
     },
 
-    add_item(item) {
+    async add_item(item) {
   if (!item.uom) {
     item.uom = item.stock_uom;
   }
@@ -799,6 +799,9 @@ export default {
     }
     this.items.unshift(new_item);
     this.update_item_detail(new_item);
+
+    // Apply UOM discount for newly added item
+    await this.apply_item_uom_discount(new_item);
 
     // Expand new item if it has batch or serial number
     if ((!this.pos_profile.posa_auto_set_batch && new_item.has_batch_no) || new_item.has_serial_no) {
@@ -2853,10 +2856,59 @@ async calc_uom(item, value) {
     });
   }
 
+  // Apply UOM discount if configured
+  await this.apply_item_uom_discount(item);
+
   // Update item details and force UI update
   this.calc_stock_qty(item, item.qty);
   this.$forceUpdate();
 },
+
+    // Apply UOM discount based on Item UOM Discount settings
+    async apply_item_uom_discount(item) {
+      // Check if the feature is enabled in POS Profile
+      if (!this.pos_profile.posa_use_item_uom_discount) {
+        return;
+      }
+
+      // Don't apply if item has an offer applied
+      if (item.posa_is_offer || item.posa_offer_applied) {
+        return;
+      }
+
+      try {
+        const r = await frappe.call({
+          method: 'posawesome.posawesome.api.posapp.get_item_uom_discount_for_cart',
+          args: {
+            item_code: item.item_code,
+            uom: item.uom,
+            qty: Math.abs(item.qty)
+          }
+        });
+
+        if (r.message && flt(r.message) > 0) {
+          const discount_percentage = flt(r.message);
+
+          // Use calc_prices to properly apply the discount
+          const mockEvent = { target: { id: 'discount_percentage' } };
+          this.calc_prices(item, discount_percentage, mockEvent);
+
+          // Trigger Vue reactivity by reassigning the items array
+          this.items = [...this.items];
+
+          this.$forceUpdate();
+
+          // Show notification
+          this.eventBus.emit('show_message', {
+            title: __('UOM Discount Applied'),
+            text: __('%s: %s% discount for %s', [item.item_name, discount_percentage, item.uom]),
+            color: 'success'
+          });
+        }
+      } catch (error) {
+        console.error('Error applying UOM discount:', error);
+      }
+    },
 
     // Calculate stock quantity for an item
     calc_stock_qty(item, value) {

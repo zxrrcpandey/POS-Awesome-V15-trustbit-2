@@ -2265,11 +2265,11 @@ def get_available_currencies():
 
 @frappe.whitelist()
 def get_product_bundle(item_code, pos_profile):
-   
+
     bundle_name = frappe.get_value("Product Bundle", {"new_item_code": item_code}, "name")
-    
+
     if not bundle_name:
-        return None 
+        return None
 
     bundle = frappe.get_doc("Product Bundle", bundle_name)
 
@@ -2285,3 +2285,50 @@ def get_product_bundle(item_code, pos_profile):
             for item in bundle.items
         ]
     }
+
+
+@frappe.whitelist()
+def get_item_uom_discounts(item_code):
+    """
+    Get all UOM discounts configured for an item.
+    Returns a list of discount configurations.
+    """
+    if not item_code:
+        return []
+
+    discounts = frappe.get_all(
+        'Item UOM Discount',
+        filters={'parent': item_code, 'parenttype': 'Item'},
+        fields=['uom', 'discount_percentage', 'min_qty', 'max_qty'],
+        order_by='uom'
+    )
+    return discounts
+
+
+@frappe.whitelist()
+def get_item_uom_discount_for_cart(item_code, uom, qty):
+    """
+    Get applicable discount percentage for a specific item/UOM/qty combination.
+    Used by POS to auto-apply discount when item is added or UOM is changed.
+    """
+    if not item_code or not uom:
+        return 0
+
+    qty = flt(qty) or 1
+
+    discounts = frappe.get_all(
+        'Item UOM Discount',
+        filters={'parent': item_code, 'parenttype': 'Item', 'uom': uom},
+        fields=['discount_percentage', 'min_qty', 'max_qty']
+    )
+
+    for d in discounts:
+        min_qty = flt(d.min_qty) or 0
+        max_qty = flt(d.max_qty) or 0
+
+        # Check if quantity falls within range
+        if qty >= min_qty:
+            if max_qty == 0 or qty <= max_qty:
+                return flt(d.discount_percentage)
+
+    return 0

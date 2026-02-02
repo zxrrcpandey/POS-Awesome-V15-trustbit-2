@@ -245,7 +245,7 @@
               :label="frappe._('Discount Amount')"
               bg-color="white"
               hide-details
-              :value="formatCurrency(invoice_doc.discount_amount)"
+              :value="formatCurrency(total_discount_amount)"
               readonly
               :prefix="currencySymbol(invoice_doc.currency)"
               persistent-placeholder
@@ -641,6 +641,23 @@ export default {
     };
   },
   computed: {
+    // Calculate total item-level discounts
+    total_items_discount_amount() {
+      if (!this.items || !this.items.length) return 0;
+      let total = 0;
+      this.items.forEach(item => {
+        if (item.discount_amount && !item.posa_is_offer) {
+          total += flt(item.discount_amount) * Math.abs(flt(item.qty));
+        }
+      });
+      return this.flt(total, this.currency_precision);
+    },
+    // Calculate total discount (items + additional)
+    total_discount_amount() {
+      const items_discount = this.total_items_discount_amount || 0;
+      const additional_discount = flt(this.invoice_doc?.discount_amount) || 0;
+      return this.flt(items_discount + additional_discount, this.currency_precision);
+    },
     // Get currency symbol for given or current currency
     currencySymbol() {
       return (currency) => {

@@ -1,0 +1,64 @@
+{
+ "actions": [],
+ "creation": "2026-02-01 10:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "uom",
+  "discount_percentage",
+  "column_break_1",
+  "min_qty",
+  "max_qty"
+ ],
+ "fields": [
+  {
+   "fieldname": "uom",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "UOM",
+   "options": "UOM",
+   "reqd": 1
+  },
+  {
+   "fieldname": "discount_percentage",
+   "fieldtype": "Percent",
+   "in_list_view": 1,
+   "label": "Discount Percentage",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "description": "Minimum quantity required for this discount to apply. Leave 0 for no minimum.",
+   "fieldname": "min_qty",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "label": "Min Qty"
+  },
+  {
+   "default": "0",
+   "description": "Maximum quantity for this discount to apply. Leave 0 for no limit.",
+   "fieldname": "max_qty",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "label": "Max Qty"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2026-02-01 10:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Posawesome",
+ "name": "Item UOM Discount",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

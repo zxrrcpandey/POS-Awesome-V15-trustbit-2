@@ -4878,7 +4878,7 @@ ApplyBuyGetFreeOffer(offer) {
     },
 
     // Increase quantity of an item (handles return logic)
-    add_one(item) {
+    async add_one(item) {
       // For returns, we need to add (make more negative)
       if (this.invoiceType === "Return") {
         item.qty++;
@@ -4887,13 +4887,16 @@ ApplyBuyGetFreeOffer(offer) {
       }
       if (item.qty == 0) {
         this.remove_item(item);
+        return;
       }
       this.calc_stock_qty(item, item.qty);
+      // Reapply UOM discount based on new quantity
+      await this.apply_item_uom_discount(item);
       this.$forceUpdate();
     },
 
     // Decrease quantity of an item (handles return logic)
-    subtract_one(item) {
+    async subtract_one(item) {
       // For returns, we need to subtract (make less negative)
       if (this.invoiceType === "Return") {
         item.qty--;
@@ -4902,8 +4905,11 @@ ApplyBuyGetFreeOffer(offer) {
       }
       if (item.qty == 0) {
         this.remove_item(item);
+        return;
       }
       this.calc_stock_qty(item, item.qty);
+      // Reapply UOM discount based on new quantity
+      await this.apply_item_uom_discount(item);
       this.$forceUpdate();
     },
   },
